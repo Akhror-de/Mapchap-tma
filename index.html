@@ -1,328 +1,49 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
+    <title>MapChap - Карта заведений</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MapChap - Карта заведений</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://api-maps.yandex.ru/2.1/?apikey=07b74146-5f5a-46bf-a2b1-cf6d052a41bb&lang=ru_RU" type="text/javascript"></script>
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=07b74146-5f5a-46bf-a2b1-cf6d052a41bb&lang=ru_RU"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #ffffff;
-            color: #000000;
-        }
-        
-        #app {
-            width: 100vw;
-            height: 100vh;
-            position: relative;
-        }
-        
-        #map {
-            width: 100%;
-            height: 100%;
-        }
-        
-        .debug-panel {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-            z-index: 1000;
-            max-width: 300px;
-            font-size: 12px;
-        }
-        
-        .debug-item {
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-        }
-        
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 10px;
-        }
-        
-        .status-success {
-            background: #4CAF50;
-            color: white;
-        }
-        
-        .status-warning {
-            background: #FF9800;
-            color: white;
-        }
-        
-        .status-error {
-            background: #F44336;
-            color: white;
-        }
-        
-        .control-panel {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: white;
-            padding: 15px;
-            border-radius: 16px;
-            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.15);
-            display: flex;
-            gap: 10px;
-            z-index: 1000;
-        }
-        
-        .btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 12px;
-            background: #007AFF;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .btn:hover {
-            background: #0056CC;
-            transform: translateY(-1px);
-        }
-        
-        .btn:active {
-            transform: translateY(0);
-        }
-        
-        .btn-secondary {
-            background: #8E8E93;
-        }
-        
-        .btn-secondary:hover {
-            background: #6D6D72;
-        }
-        
-        .hidden {
-            display: none;
-        }
-        
-        .loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            z-index: 1001;
-        }
-        
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #007AFF;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        body, html { margin: 0; padding: 0; height: 100%; }
+        #map { width: 100%; height: 100%; }
+        .panel { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            background: white; 
+            padding: 10px; 
+            border-radius: 10px;
         }
     </style>
 </head>
 <body>
-    <div id="app">
-        <div id="loading" class="loading">
-            <div class="spinner"></div>
-            <div>Загрузка MapChap...</div>
-            <div id="version-info" style="margin-top: 10px; font-size: 12px; color: #666;"></div>
-        </div>
-        
-        <div id="debug-panel" class="debug-panel hidden">
-            <h3>🔧 Debug Panel</h3>
-            <div class="debug-item">
-                <span>Версия приложения:</span>
-                <span id="app-version" class="status-badge status-success">v1.0.0</span>
-            </div>
-            <div class="debug-item">
-                <span>Telegram WebApp:</span>
-                <span id="tg-status" class="status-badge">Проверка...</span>
-            </div>
-            <div class="debug-item">
-                <span>Яндекс.Карты:</span>
-                <span id="map-status" class="status-badge">Загрузка...</span>
-            </div>
-            <div class="debug-item">
-                <span>API Ключ:</span>
-                <span id="api-status" class="status-badge status-success">Активен</span>
-            </div>
-            <div class="debug-item">
-                <button class="btn" onclick="location.reload(true)">🔄 Обновить</button>
-            </div>
-        </div>
-        
-        <div id="map"></div>
-        
-        <div class="control-panel">
-            <button class="btn" onclick="app.findNearby()">📍 Рядом со мной</button>
-            <button class="btn btn-secondary" onclick="app.toggleDebug()">🐛 Debug</button>
-        </div>
+    <div class="panel">
+        <h3>🗺️ MapChap</h3>
+        <p>Карта заведений</p>
     </div>
+    <div id="map"></div>
 
     <script>
-        // Система версий против кэширования
-        const VERSION = '1.0.0-' + Date.now();
-        localStorage.setItem('mapchap-version', VERSION);
-        document.getElementById('version-info').textContent = 'Версия: 1.0.0 | API: Активен';
+        ymaps.ready(function() {
+            var map = new ymaps.Map('map', {
+                center: [55.751244, 37.618423],
+                zoom: 10
+            });
+            
+            var placemark = new ymaps.Placemark([55.751244, 37.618423], {
+                balloonContent: 'Тестовое заведение'
+            });
+            
+            map.geoObjects.add(placemark);
+        });
 
-        class MapChapApp {
-            constructor() {
-                this.map = null;
-                this.tg = null;
-                this.isDebug = false;
-                this.init();
-            }
-            
-            async init() {
-                try {
-                    await this.initTelegram();
-                    await this.initMap();
-                    this.showUI();
-                } catch (error) {
-                    console.error('Ошибка:', error);
-                    this.updateStatus('map-status', 'Ошибка', 'error');
-                }
-            }
-            
-            initTelegram() {
-                return new Promise((resolve) => {
-                    if (window.Telegram && window.Telegram.WebApp) {
-                        this.tg = Telegram.WebApp;
-                        this.tg.ready();
-                        this.tg.expand();
-                        this.updateStatus('tg-status', 'Готов', 'success');
-                        resolve();
-                    } else {
-                        this.updateStatus('tg-status', 'Не в Telegram', 'warning');
-                        resolve();
-                    }
-                });
-            }
-            
-            initMap() {
-                return new Promise((resolve, reject) => {
-                    if (!window.ymaps) {
-                        reject(new Error('YMaps не загружен'));
-                        return;
-                    }
-                    
-                    ymaps.ready(() => {
-                        try {
-                            // Простая инициализация БЕЗ .setType()
-                            this.map = new ymaps.Map('map', {
-                                center: [55.751244, 37.618423],
-                                zoom: 10,
-                                controls: ['zoomControl', 'fullscreenControl']
-                            });
-                            
-                            this.addTestPlaces();
-                            this.updateStatus('map-status', 'Карта загружена', 'success');
-                            resolve();
-                            
-                        } catch (error) {
-                            this.updateStatus('map-status', 'Ошибка карты', 'error');
-                            reject(error);
-                        }
-                    });
-                });
-            }
-            
-            addTestPlaces() {
-                const places = [
-                    {
-                        coords: [55.751244, 37.618423],
-                        name: 'Тестовое кафе',
-                        type: 'cafe'
-                    },
-                    {
-                        coords: [55.753215, 37.622504],
-                        name: 'Пример ресторана', 
-                        type: 'restaurant'
-                    },
-                    {
-                        coords: [55.749762, 37.621894],
-                        name: 'Тестовый магазин',
-                        type: 'shop'
-                    }
-                ];
-                
-                places.forEach(place => {
-                    const placemark = new ymaps.Placemark(place.coords, {
-                        balloonContent: '<strong>' + place.name + '</strong><br>Тип: ' + place.type
-                    }, {
-                        preset: 'islands#blueDotIcon'
-                    });
-                    
-                    this.map.geoObjects.add(placemark);
-                });
-            }
-            
-            findNearby() {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                            const coords = [position.coords.latitude, position.coords.longitude];
-                            this.map.setCenter(coords, 15);
-                            
-                            const myPlacemark = new ymaps.Placemark(coords, {
-                                balloonContent: 'Ваше местоположение'
-                            }, {
-                                preset: 'islands#geolocationIcon'
-                            });
-                            
-                            this.map.geoObjects.add(myPlacemark);
-                        },
-                        (error) => {
-                            alert('Ошибка геолокации: ' + error.message);
-                        }
-                    );
-                } else {
-                    alert('Геолокация не поддерживается');
-                }
-            }
-            
-            toggleDebug() {
-                this.isDebug = !this.isDebug;
-                const debugPanel = document.getElementById('debug-panel');
-                debugPanel.classList.toggle('hidden', !this.isDebug);
-            }
-            
-            updateStatus(elementId, text, type = '') {
-                const element = document.getElementById(elementId);
-                element.textContent = text;
-                element.className = 'status-badge';
-                if (type) element.classList.add('status-' + type);
-            }
-            
-            showUI() {
-                document.getElementById('loading').style.display = 'none';
-            }
+        if (window.Telegram && Telegram.WebApp) {
+            Telegram.WebApp.ready();
+            Telegram.WebApp.expand();
         }
-        
-        const app = new MapChapApp();
-        window.app = app;
     </script>
 </body>
-</html> 
+</html>
