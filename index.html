@@ -5,46 +5,377 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://api-maps.yandex.ru/2.1/?apikey=07b74146-5f5a-46bf-a2b1-cf6d052a41bb&lang=ru_RU"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; }
-        #map { width: 100%; height: 100%; }
-        .panel { 
-            position: absolute; 
-            top: 10px; 
-            left: 10px; 
-            background: white; 
-            padding: 10px; 
-            border-radius: 10px;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body, html { 
+            height: 100%; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            overflow: hidden;
+        }
+        
+        #map { 
+            width: 100%; 
+            height: 100%; 
+        }
+        
+        /* Header Panel */
+        .header-panel {
+            position: absolute;
+            top: 50px;
+            left: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+        
+        .app-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .app-title h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin: 0;
+        }
+        
+        .app-title .logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #007AFF, #5856D6);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+        }
+        
+        .app-subtitle {
+            font-size: 16px;
+            color: #666;
+            margin: 0;
+            font-weight: 500;
+        }
+        
+        /* Control Panel */
+        .control-panel {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 18px;
+            border-radius: 25px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(20px);
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+        
+        .btn {
+            padding: 16px 28px;
+            border: none;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #007AFF, #0056CC);
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(0, 122, 255, 0.4);
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 122, 255, 0.5);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        /* Loading Screen */
+        .loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            transition: opacity 0.5s ease;
+        }
+        
+        .loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .spinner {
+            width: 70px;
+            height: 70px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top: 5px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 25px;
+        }
+        
+        .loading-text {
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .loading-subtext {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Custom Leaflet Styles */
+        .leaflet-control-container {
+            display: none !important;
+        }
+        
+        .custom-marker {
+            background: #007AFF;
+            border: 3px solid white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            box-shadow: 0 2px 10px rgba(0, 122, 255, 0.5);
+        }
+        
+        .cafe-marker {
+            background: #FF6B00;
+        }
+        
+        .restaurant-marker {
+            background: #4CAF50;
+        }
+        
+        .shop-marker {
+            background: #9C27B0;
         }
     </style>
 </head>
 <body>
-    <div class="panel">
-        <h3>🗺️ MapChap</h3>
-        <p>Карта заведений</p>
+    <!-- Loading Screen -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">MapChap</div>
+        <div class="loading-subtext">Загрузка карты...</div>
     </div>
+    
+    <!-- Header -->
+    <div class="header-panel">
+        <div class="app-title">
+            <div class="logo">🗺️</div>
+            <h1>MapChap</h1>
+        </div>
+        <p class="app-subtitle">Только ваши заведения</p>
+    </div>
+    
+    <!-- Map -->
     <div id="map"></div>
+    
+    <!-- Controls -->
+    <div class="control-panel">
+        <button class="btn" onclick="app.findNearby()">📍 Рядом со мной</button>
+    </div>
 
     <script>
-        ymaps.ready(function() {
-            var map = new ymaps.Map('map', {
-                center: [55.751244, 37.618423],
-                zoom: 10
-            });
+        class MapChapApp {
+            constructor() {
+                this.map = null;
+                this.tg = null;
+                this.places = [];
+                this.init();
+            }
             
-            var placemark = new ymaps.Placemark([55.751244, 37.618423], {
-                balloonContent: 'Тестовое заведение'
-            });
+            async init() {
+                // Инициализация Telegram WebApp
+                if (window.Telegram && Telegram.WebApp) {
+                    this.tg = Telegram.WebApp;
+                    this.tg.ready();
+                    this.tg.expand();
+                }
+                
+                // Инициализация карты
+                this.initMap();
+            }
             
-            map.geoObjects.add(placemark);
-        });
-
-        if (window.Telegram && Telegram.WebApp) {
-            Telegram.WebApp.ready();
-            Telegram.WebApp.expand();
+            initMap() {
+                try {
+                    // Создаем карту Leaflet
+                    this.map = L.map('map', {
+                        zoomControl: false, // Отключаем стандартные контролы
+                        attributionControl: false // Отключаем атрибуцию
+                    }).setView([55.751244, 37.618423], 13);
+                    
+                    // Добавляем тайлы OpenStreetMap
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        maxZoom: 19,
+                    }).addTo(this.map);
+                    
+                    // Добавляем наши метки
+                    this.addTestPlaces();
+                    
+                    // Скрываем loading screen
+                    setTimeout(() => {
+                        document.getElementById('loading').classList.add('hidden');
+                    }, 1000);
+                    
+                } catch (error) {
+                    console.error('Ошибка создания карты:', error);
+                    this.showError();
+                }
+            }
+            
+            addTestPlaces() {
+                this.places = [
+                    {
+                        coords: [55.751244, 37.618423],
+                        name: 'Кофейня "Уют"',
+                        type: 'cafe',
+                        address: 'Красная площадь, 1',
+                        rating: 4.5
+                    },
+                    {
+                        coords: [55.753215, 37.622504],
+                        name: 'Ресторан "Вкусно"', 
+                        type: 'restaurant',
+                        address: 'ул. Тверская, 15',
+                        rating: 4.8
+                    },
+                    {
+                        coords: [55.749762, 37.621894],
+                        name: 'Магазин "Супер"',
+                        type: 'shop',
+                        address: 'ул. Петровка, 25',
+                        rating: 4.2
+                    },
+                    {
+                        coords: [55.755500, 37.617800],
+                        name: 'Бар "Вечерний"',
+                        type: 'cafe',
+                        address: 'пл. Революции, 3',
+                        rating: 4.7
+                    }
+                ];
+                
+                this.places.forEach(place => {
+                    // Создаем кастомную иконку
+                    const customIcon = L.divIcon({
+                        className: `custom-marker ${place.type}-marker`,
+                        html: '',
+                        iconSize: [20, 20],
+                        iconAnchor: [10, 10]
+                    });
+                    
+                    // Добавляем маркер на карту
+                    const marker = L.marker(place.coords, { icon: customIcon })
+                        .addTo(this.map)
+                        .bindPopup(`
+                            <div style="padding: 10px; min-width: 200px;">
+                                <h3 style="margin: 0 0 8px 0; color: #1a1a1a;">${place.name}</h3>
+                                <p style="margin: 0 0 5px 0; color: #666; font-size: 14px;">${place.address}</p>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="color: #ff6b00; font-weight: bold;">⭐ ${place.rating}</span>
+                                    <span style="color: #007AFF; font-size: 12px; background: #e3f2fd; padding: 4px 12px; border-radius: 12px;">
+                                        ${this.getTypeName(place.type)}
+                                    </span>
+                                </div>
+                            </div>
+                        `);
+                });
+            }
+            
+            getTypeName(type) {
+                const names = {
+                    'cafe': 'Кафе',
+                    'restaurant': 'Ресторан',
+                    'shop': 'Магазин'
+                };
+                return names[type] || 'Заведение';
+            }
+            
+            findNearby() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            const coords = [position.coords.latitude, position.coords.longitude];
+                            this.map.setView(coords, 16);
+                            
+                            // Добавляем метку текущего местоположения
+                            const myIcon = L.divIcon({
+                                className: 'custom-marker',
+                                html: '📍',
+                                iconSize: [30, 30],
+                                iconAnchor: [15, 15]
+                            });
+                            
+                            L.marker(coords, { icon: myIcon })
+                                .addTo(this.map)
+                                .bindPopup('📍 Ваше местоположение');
+                            
+                            this.showNotification('📍 Ваше местоположение определено!');
+                        },
+                        (error) => {
+                            this.showNotification('❌ Не удалось определить местоположение');
+                        }
+                    );
+                } else {
+                    this.showNotification('❌ Геолокация не поддерживается');
+                }
+            }
+            
+            showError() {
+                document.getElementById('loading').innerHTML = `
+                    <div style="text-align: center; color: white;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">❌</div>
+                        <div style="font-size: 20px; margin-bottom: 10px;">Ошибка загрузки</div>
+                        <button onclick="location.reload()" style="margin-top: 20px; padding: 12px 24px; border: none; border-radius: 12px; background: white; color: #667eea; font-weight: bold; cursor: pointer;">Обновить</button>
+                    </div>
+                `;
+            }
+            
+            showNotification(message) {
+                alert(`🗺️ MapChap\n\n${message}`);
+            }
         }
+        
+        // Инициализация приложения
+        const app = new MapChapApp();
     </script>
 </body>
 </html>
-    
