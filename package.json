@@ -5,24 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "python -m http.server 8000",
-    "start": "python -m http.server 8000",
-    "build": "echo 'No build process needed'",
-    "vercel-build": "echo 'Build completed'"
+    "build": "echo 'Build completed' && exit 0",
+    "vercel-build": "echo 'Vercel build completed' && exit 0"
   },
   "keywords": [
     "telegram",
     "mini-app",
     "map",
-    "yandex-maps",
-    "web-app"
+    "yandex-maps"
   ],
-  "author": "Your Name",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/YOUR_USERNAME/mapchap-tma.git"
-  },
-  "engines": {
-    "node": ">=18.x"
-  }
-} 
+  "author": "MapChap Team",
+  "license": "MIT"
+}
